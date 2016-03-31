@@ -1,4 +1,5 @@
 import copy
+from difflib import SequenceMatcher
 
 from coalib.results.Diff import ConflictError, Diff
 from coalib.results.SourceRange import SourceRange
@@ -210,15 +211,31 @@ def remove_result_ranges_diffs(result_list, file_dict):
 
 def ensure_files_present(original_file_dict, modified_file_dict):
     """
-    Ensures that all files are available as keys in both dicts.
+    Ensures that all files are available as keys in both dicts. Return a
+    dictionary of renamed files.
 
     :param original_file_dict: Dict of lists of file contents before  changes
     :param modified_file_dict: Dict of lists of file contents after changes
     """
     affected_files = set(original_file_dict.keys()).union(
         set(modified_file_dict.keys()))
+    original_unique_files = affected_files - set(modified_file_dict.keys())
+    renamed_files_dict = {}
     for file in affected_files:
         if file not in original_file_dict:
-            original_file_dict[file] = []
+            renamed = 0
+            for comparable_file in original_unique_files:
+                s = SequenceMatcher(
+                    None,
+                    ''.join(modified_file_dict[file]),
+                    ''.join(original_file_dict[comparable_file]))
+                if s.real_quick_ratio() >= 0.5:
+                    if s.ratio() > 0.5:
+                        renamed_files_dict[comparable_file] = file
+                        renamed = 1
+                        break
+            if renamed == 0:
+                original_file_dict[file] = []
         if file not in modified_file_dict:
             modified_file_dict[file] = []
+    return renamed_files_dict

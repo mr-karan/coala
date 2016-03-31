@@ -562,3 +562,84 @@ class ResultFilterTest(unittest.TestCase):
                                      [old_result_tf1, old_result_tf2],
                                      [new_result])
         self.assertEqual(new_results, [new_result])
+
+    def test_file_renaming(self):
+        testfile_1 = ['1\n', '2\n']
+        testfile_2 = ['3\n', '4\n', '5\n']
+
+        tf1 = abspath('tf1')
+        tf2 = abspath('tf2')
+        tf1_new = abspath('tf1_new')
+
+        original_file_dict = {tf1: testfile_1, tf2: testfile_2}
+        modified_file_dict = {tf1_new: testfile_1}
+
+        renamed_files = ensure_files_present(original_file_dict,
+                                             modified_file_dict)
+
+        self.assertEqual({tf1: tf1_new}, renamed_files)
+
+        testfile_1 = ['1\n', '2\n']
+        testfile_2 = ['3\n', '4\n', '5\n']
+
+        tf1 = abspath('tf1')
+        tf2 = abspath('tf2')
+
+        original_file_dict = {tf1: testfile_1, tf2: testfile_2}
+        modified_file_dict = {tf1: testfile_1}
+
+        renamed_files = ensure_files_present(original_file_dict,
+                                             modified_file_dict)
+
+        self.assertEqual({}, renamed_files)
+
+        testfile_1 = ['1\n', '2\n']
+        testfile_2 = ['3\n', '4\n', '5\n']
+
+        tf1 = abspath('tf1')
+        tf2 = abspath('tf2')
+
+        testfile_2_new = ['6\n', '4\n', '5\n']
+        tf2_new = abspath('tf2_new')
+
+        original_file_dict = {tf1: testfile_1, tf2: testfile_2}
+        modified_file_dict = {tf2_new: testfile_2_new}
+
+        renamed_files = ensure_files_present(original_file_dict,
+                                             modified_file_dict)
+
+        self.assertEqual({tf2: tf2_new}, renamed_files)
+
+        testfile_1 = ['1\n', '2\n']
+        testfile_2 = ['3\n', '4\n', '5\n']
+
+        tf1 = abspath('tf1')
+        tf2 = abspath('tf2')
+
+        testfile_2_new = ['3\n']
+        tf2_new = abspath('tf2_new')
+
+        original_file_dict = {tf1: testfile_1, tf2: testfile_2}
+        modified_file_dict = {tf2_new: testfile_2_new}
+
+        renamed_files = ensure_files_present(original_file_dict,
+                                             modified_file_dict)
+
+        self.assertEqual({}, renamed_files)
+
+        testfile_1 = ['1\n', '2\n']
+        testfile_2 = ['3\n', '4\n', '5\n']
+
+        tf1 = abspath('tf1')
+        tf2 = abspath('tf2')
+
+        testfile_2_new = ['1\n', '2\n', '0\n', '1\n', '2\n', '1\n', '2\n']
+        tf2_new = abspath('tf2_new')
+
+        original_file_dict = {tf1: testfile_1, tf2: testfile_2}
+        modified_file_dict = {tf2_new: testfile_2_new}
+
+        renamed_files = ensure_files_present(original_file_dict,
+                                             modified_file_dict)
+
+        self.assertEqual({}, renamed_files)
