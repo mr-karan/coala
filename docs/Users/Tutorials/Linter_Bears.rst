@@ -15,40 +15,64 @@ What do we Need?
 ----------------
 
 First of all, we need the linter that we are going to use.
-In this tutorial we will build the HTMLTutorialBear so we need an html
-linter.
-`This <https://github.com/deezer/html-linter>`__ one will do.
+In this tutorial we will build the PyLintTutorialBear so we take ``pylint``
+(`<https://www.pylint.org/>`__) as reference.
 Since it is a python package we can go ahead and install it with
 
 ::
 
-    $ pip install html-linter
+    $ pip3 install pylint
 
 Writing the Bear
 ----------------
 
-Since we are going to use the Lint class we should go ahead and
-import it together with LocalBear (all bears that handle only one file
-inherit from LocalBear). Also we will go ahead and write the class
-head. It should inherit both LocalBear and Lint.
+The starting point of writing a bear that wraps an existing tool (in this case
+``pylint``) is the ``linter`` decorator from
+``coalib.bearlib.abstractions.Linter``. So let's start:
+
+::
+    from coalib.bearlib.abstractions.Linter import linter
+
+    @linter()
+    class PyLintTutorialBear:
+        pass
+
+# TODO Move at end of paragraph
+.. important::
+
+    The ``Lint`` class is deprecated by now, and the new *Linter v2 API* was
+    introduced. You might see some bears that still use this old class, but
+    these aren't just ported yet. The class gets removed as soon as every bear
+    uses the new API.
+
+To make our bear use a linter we will have to pass the ``executable`` argument
+which contains the name or the path to the linter:
 
 ::
 
-    from coalib.bearlib.abstractions.Lint import Lint
-    from coalib.bears.LocalBear import LocalBear
+    @linter(executable='pylint')
+    class PyLintTutorialBear:
+        pass
 
-    class HTMLTutorialBear(LocalBear, Lint):
+Next we need to specify an output format the linter uses. Currently supported
+are
 
-To make our bear use a linter we will have to overwrite some of the
-predefined values of the Lint class. Some of the most important are
-``executable`` and ``output_regex``.
+- ``regex``: Parses each line of output received from the linter with a regex.
+- ``corrected``: Treats the output received as the already corrected file. coala
+  generates automatically patches then.
 
-We use ``executable`` to specify the linter executable. In our case it would
-be
+It is also possible to define no output format at all and taking it over
+yourself (more on that later).
+
+In order to figure out the ``output_format`` we have to first see how the
+linter output looks. I will use this file as ``sample.py``
 
 ::
 
-    executable = 'html_lint.py'
+    print("Hello world")
+
+Executing ``pylint`` with it yields some big statistics output. This is too
+difficult to parse. A bit browsing on the pylint-page shows that we can use
 
 The ``output_regex`` is used to group parts of the output (such as ``lines``,
 ``columns``, ``severity`` and ``message``) so it can be used by the Lint
