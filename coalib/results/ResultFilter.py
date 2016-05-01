@@ -20,12 +20,19 @@ def filter_results(original_file_dict,
                                from all those that existed in the old changes
     """
 
-    ensure_files_present(original_file_dict, modified_file_dict)
+    renamed_files = ensure_files_present(original_file_dict,
+                                         modified_file_dict)
     # diffs_dict[file] is a diff between the original and modified file
     diffs_dict = {}
     for file in original_file_dict:
-        diffs_dict[file] = Diff.from_string_arrays(original_file_dict[file],
-                                                   modified_file_dict[file])
+        if file in renamed_files:
+            diffs_dict[file] = Diff.from_string_arrays(
+                original_file_dict[file],
+                modified_file_dict[renamed_files[file]])
+        else:
+            diffs_dict[file] = Diff.from_string_arrays(
+                original_file_dict[file],
+                modified_file_dict[file])
 
     orig_result_diff_dict_dict = remove_result_ranges_diffs(original_results,
                                                             original_file_dict)
@@ -44,7 +51,8 @@ def filter_results(original_file_dict,
                 if source_ranges_match(original_file_dict,
                                        diffs_dict,
                                        orig_result_diff_dict_dict[o_r],
-                                       mod_result_diff_dict_dict[m_r]):
+                                       mod_result_diff_dict_dict[m_r],
+                                       renamed_files):
 
                     # at least one original result matches completely
                     unique = False
@@ -77,7 +85,8 @@ def basics_match(original_result,
 def source_ranges_match(original_file_dict,
                         diff_dict,
                         original_result_diff_dict,
-                        modified_result_diff_dict):
+                        modified_result_diff_dict,
+                        renamed_files):
     """
     Checks whether the SourceRanges of two results match
 
@@ -85,9 +94,13 @@ def source_ranges_match(original_file_dict,
     :param diff_dict:          Dict of diffs describing the changes per file
     :param original_result_diff_dict: diff for each file for this result
     :param modified_result_diff_dict: guess
+    :param renamed_files:   A dictionary containing file renamings across runs
     :return:                     Boolean value whether the SourceRanges match
     """
     for file_name in original_file_dict:
+        mod_file_name = file_name
+        if file_name in renamed_files:
+            mod_file_name = renamed_files[file_name]
 
         try:  # fails if the affected range of the result get's modified
             original_total_diff = (diff_dict[file_name] +
@@ -98,7 +111,7 @@ def source_ranges_match(original_file_dict,
         # original file with file_diff and original_diff applied
         original_total_file = original_total_diff.modified
         # modified file with modified_diff applied
-        modified_total_file = modified_result_diff_dict[file_name].modified
+        modified_total_file = modified_result_diff_dict[mod_file_name].modified
         if original_total_file != modified_total_file:
             return False
     return True

@@ -368,6 +368,288 @@ class ResultFilterTest(unittest.TestCase):
                                                        new_result_list)),
                                  sorted(unique_new_result_list))
 
+    def test_affected_code_rename_files(self):
+
+        # ORIGINAL SOURCE RANGES:
+        sr0_pre_change = SourceRange.from_values("file_name",
+                                                 start_line=4,
+                                                 start_column=1,
+                                                 end_line=4,
+                                                 end_column=6)
+        sr0_change = SourceRange.from_values("file_name",
+                                             start_line=4,
+                                             start_column=8,
+                                             end_line=4,
+                                             end_column=13)
+        sr0_post_change = SourceRange.from_values("file_name",
+                                                  start_line=4,
+                                                  start_column=15,
+                                                  end_line=4,
+                                                  end_column=19)
+
+        sr0_pre_remove = SourceRange.from_values("file_name",
+                                                 start_line=6,
+                                                 start_column=1,
+                                                 end_line=6,
+                                                 end_column=6)
+        sr0_post_remove = SourceRange.from_values("file_name",
+                                                  start_line=8,
+                                                  start_column=1,
+                                                  end_line=8,
+                                                  end_column=5)
+
+        sr0_pre_addition = SourceRange.from_values("file_name",
+                                                   start_line=10,
+                                                   start_column=1,
+                                                   end_line=10,
+                                                   end_column=6)
+        sr0_post_addition = SourceRange.from_values("file_name",
+                                                    start_line=11,
+                                                    start_column=1,
+                                                    end_line=11,
+                                                    end_column=5)
+
+        # ORIGINAL RESULTS:
+        res0_pre_change = Result(origin="origin",
+                                 message="message",
+                                 affected_code=(sr0_pre_change,))
+        res0_change = Result(origin="origin",
+                             message="message",
+                             affected_code=(sr0_change,))
+        res0_post_change = Result(origin="origin",
+                                  message="message",
+                                  affected_code=(sr0_post_change,))
+        res0_around_change = Result(origin="origin",
+                                    message="message",
+                                    affected_code=(sr0_pre_change,
+                                                   sr0_post_change))
+        res0_with_change = Result(origin="origin",
+                                  message="message",
+                                  affected_code=(sr0_pre_change,
+                                                 sr0_change,
+                                                 sr0_post_change))
+        res0_whole_change = Result.from_values(origin="origin",
+                                               message="message",
+                                               file="file_name",
+                                               line=4,
+                                               column=1,
+                                               end_line=4,
+                                               end_column=19)
+
+        res0_pre_remove = Result(origin="origin",
+                                 message="message",
+                                 affected_code=(sr0_pre_remove,))
+        res0_post_remove = Result(origin="origin",
+                                  message="message",
+                                  affected_code=(sr0_post_remove,))
+        res0_around_remove = Result(origin="origin",
+                                    message="message",
+                                    affected_code=(sr0_pre_remove,
+                                                   sr0_post_remove))
+        res0_whole_remove = Result.from_values(origin="origin",
+                                               message="message",
+                                               file="file_name",
+                                               line=6,
+                                               column=1,
+                                               end_line=8,
+                                               end_column=5)
+
+        res0_pre_addition = Result(origin="origin",
+                                   message="message",
+                                   affected_code=(sr0_pre_addition,))
+        res0_post_addition = Result(origin="origin",
+                                    message="message",
+                                    affected_code=(sr0_post_addition,))
+        res0_around_addition = Result(origin="origin",
+                                      message="message",
+                                      affected_code=(sr0_pre_addition,
+                                                     sr0_post_addition))
+        res0_whole_addition = Result.from_values(origin="origin",
+                                                 message="message",
+                                                 file="file_name",
+                                                 line=10,
+                                                 column=1,
+                                                 end_line=11,
+                                                 end_column=5)
+
+        # NEW SOURCE RANGES:
+        sr1_pre_change = SourceRange.from_values("file_name_new",
+                                                 start_line=4,
+                                                 start_column=1,
+                                                 end_line=4,
+                                                 end_column=6)
+        sr1_change = SourceRange.from_values("file_name_new",
+                                             start_line=4,
+                                             start_column=8,
+                                             end_line=4,
+                                             end_column=13)
+        sr1_post_change = SourceRange.from_values("file_name_new",
+                                                  start_line=4,
+                                                  start_column=15,
+                                                  end_line=4,
+                                                  end_column=19)
+
+        sr1_pre_remove = SourceRange.from_values("file_name_new",
+                                                 start_line=6,
+                                                 start_column=1,
+                                                 end_line=6,
+                                                 end_column=6)
+        sr1_post_remove = SourceRange.from_values("file_name_new",
+                                                  start_line=7,
+                                                  start_column=1,
+                                                  end_line=7,
+                                                  end_column=5)
+
+        sr1_pre_addition = SourceRange.from_values("file_name_new",
+                                                   start_line=9,
+                                                   start_column=1,
+                                                   end_line=9,
+                                                   end_column=6)
+        sr1_addition = SourceRange.from_values("file_name_new",
+                                               start_line=10,
+                                               start_column=1,
+                                               end_line=10,
+                                               end_column=8)
+        sr1_post_addition = SourceRange.from_values("file_name_new",
+                                                    start_line=11,
+                                                    start_column=1,
+                                                    end_line=11,
+                                                    end_column=5)
+
+        # NEW RESULTS:
+        res1_pre_change = Result(origin="origin",
+                                 message="message",
+                                 affected_code=(sr1_pre_change,))
+        res1_change = Result(origin="origin",
+                             message="message",
+                             affected_code=(sr1_change,))
+        res1_post_change = Result(origin="origin",
+                                  message="message",
+                                  affected_code=(sr1_post_change,))
+        res1_around_change = Result(origin="origin",
+                                    message="message",
+                                    affected_code=(sr1_pre_change,
+                                                   sr1_post_change))
+        res1_with_change = Result(origin="origin",
+                                  message="message",
+                                  affected_code=(sr1_pre_change,
+                                                 sr1_change,
+                                                 sr1_post_change))
+        res1_whole_change = Result.from_values(origin="origin",
+                                               message="message",
+                                               file="file_name_new",
+                                               line=4,
+                                               column=1,
+                                               end_line=4,
+                                               end_column=19)
+
+        res1_pre_remove = Result(origin="origin",
+                                 message="message",
+                                 affected_code=(sr1_pre_remove,))
+        res1_post_remove = Result(origin="origin",
+                                  message="message",
+                                  affected_code=(sr1_post_remove,))
+        res1_around_remove = Result(origin="origin",
+                                    message="message",
+                                    affected_code=(sr1_pre_remove,
+                                                   sr1_post_remove))
+        res1_whole_remove = Result.from_values(origin="origin",
+                                               message="message",
+                                               file="file_name_new",
+                                               line=6,
+                                               column=1,
+                                               end_line=7,
+                                               end_column=5)
+
+        res1_pre_addition = Result(origin="origin",
+                                   message="message",
+                                   affected_code=(sr1_pre_addition,))
+        res1_addition = Result(origin="origin",
+                               message="message",
+                               affected_code=(sr1_addition,))
+        res1_post_addition = Result(origin="origin",
+                                    message="message",
+                                    affected_code=(sr1_post_addition,))
+        res1_around_addition = Result(origin="origin",
+                                      message="message",
+                                      affected_code=(sr1_pre_addition,
+                                                     sr1_post_addition))
+        res1_with_addition = Result(origin="origin",
+                                    message="message",
+                                    affected_code=(sr1_pre_addition,
+                                                   sr1_addition,
+                                                   sr1_post_addition))
+        res1_whole_addition = Result.from_values(origin="origin",
+                                                 message="message",
+                                                 file="file_name_new",
+                                                 line=9,
+                                                 column=1,
+                                                 end_line=11,
+                                                 end_column=5)
+
+        original_result_list = [res0_pre_change,
+                                res0_change,
+                                res0_post_change,
+                                res0_around_change,
+                                res0_with_change,
+                                res0_whole_change,
+
+                                res0_pre_remove,
+                                res0_post_remove,
+                                res0_around_remove,
+                                res0_whole_remove,
+
+                                res0_pre_addition,
+                                res0_post_addition,
+                                res0_around_addition,
+                                res0_whole_addition]
+
+        new_result_list = [res1_pre_change,       # FALSE POSITIVE (in-line)
+                           res1_change,           # correctly kept
+                           res1_post_change,      # FALSE POSITIVE (in-line)
+                           res1_around_change,    # FALSE POSITIVE (in-line)
+                           res1_with_change,      # correctly kept
+                           res1_whole_change,     # correctly kept
+
+                           res1_pre_remove,       # correctly filtered out
+                           res1_post_remove,      # FALSE POSITIVE (in-line)
+                           res1_around_remove,    # correctly filtered out
+                           res1_whole_remove,     # correctly kept
+
+                           res1_pre_addition,     # correctly filtered out
+                           res1_addition,         # correctly kept
+                           res1_post_addition,    # correctly filtered out
+                           res1_around_addition,  # FALSE POSITIVE (close-line)
+                           res1_with_addition,    # correctly kept
+                           res1_whole_addition]   # correctly kept
+
+        unique_new_result_list = [res1_pre_change,       # WRONG: line-wise diff
+                                  res1_change,           # correct
+                                  res1_post_change,      # WRONG: line-wise diff
+                                  res1_around_change,    # WRONG: line-wise diff
+                                  res1_with_change,      # correct
+                                  res1_whole_change,     # correct
+
+                                  res1_addition,         # correct
+                                  res1_around_addition,  # WRONG: line-wise diff
+                                  res1_with_addition,    # correct
+                                  res1_whole_addition]   # correct
+
+        with open(self.original_file_name, "r") as original_file:
+            original_file_dict = {
+                abspath("file_name"): original_file.readlines()}
+
+            with open(self.modified_file_name, "r") as modified_file:
+                modified_file_dict = {
+                    abspath("file_name_new"): modified_file.readlines()}
+
+                # 'TIS THE IMPORTANT PART
+                self.assertEqual(sorted(filter_results(original_file_dict,
+                                                       modified_file_dict,
+                                                       original_result_list,
+                                                       new_result_list)),
+                                 sorted(unique_new_result_list))
+
     def test_unrelated_file_change(self):
         testfile_1 = ['1\n', '2\n']
         testfile_2 = ['1\n', '2\n']
