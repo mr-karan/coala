@@ -11,6 +11,7 @@ from coalib.output.printers.LogPrinter import LogPrinter
 from coalib.output.Tagging import delete_tagged_results, tag_results
 from coalib.processes.Processing import execute_section, simplify_section_result
 from coalib.settings.ConfigurationGathering import gather_configuration
+from coalib.misc.Caching import FileCache
 
 do_nothing = lambda *args: True
 
@@ -69,6 +70,11 @@ def run_coala(log_printer=None,
         dtag = str(sections['default'].get('dtag', None))
         config_file = os.path.abspath(str(sections["default"].get("config")))
 
+        cache = FileCache(
+            log_printer,
+            config_file,
+            sections['default'].get('flush_cache', False))
+
         # Deleting all .orig files, so the latest files are up to date!
         coala_delete_orig.main(log_printer, sections["default"])
 
@@ -84,6 +90,7 @@ def run_coala(log_printer=None,
                 global_bear_list=global_bears[section_name],
                 local_bear_list=local_bears[section_name],
                 print_results=print_results,
+                cache=cache,
                 log_printer=log_printer)
             yielded, yielded_unfixed, results[section_name] = (
                 simplify_section_result(section_result))
@@ -94,6 +101,8 @@ def run_coala(log_printer=None,
             did_nothing = False
 
             file_dicts[section_name] = section_result[3]
+
+        cache.write()
 
         tag_results(tag, config_file, results, log_printer)
 

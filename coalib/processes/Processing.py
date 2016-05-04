@@ -19,8 +19,10 @@ from coalib.results.result_actions.PrintDebugMessageAction import (
 from coalib.results.result_actions.ShowPatchAction import ShowPatchAction
 from coalib.results.RESULT_SEVERITY import RESULT_SEVERITY
 from coalib.results.SourceRange import SourceRange
+from coalib.settings.ConfigurationGathering import get_config_directory
 from coalib.settings.Setting import glob_list
 from coalib.parsing.Globbing import fnmatch
+from coalib.misc.CachingUtilities import get_changed_files
 
 ACTIONS = [ApplyPatchAction,
            PrintDebugMessageAction,
@@ -322,6 +324,7 @@ def instantiate_processes(section,
                           local_bear_list,
                           global_bear_list,
                           job_count,
+                          cache,
                           log_printer):
     """
     Instantiate the number of processes that will run bears which will be
@@ -331,6 +334,8 @@ def instantiate_processes(section,
     :param local_bear_list:  List of local bears belonging to the section.
     :param global_bear_list: List of global bears belonging to the section.
     :param job_count:        Max number of processes to create.
+    :param cache:            An instance of ``misc.Caching.FileCache`` to use as
+                             a file cache buffer.
     :param log_printer:      The log printer to warn to.
     :return:                 A tuple containing a list of processes,
                              and the arguments passed to each process which are
@@ -341,7 +346,15 @@ def instantiate_processes(section,
         log_printer,
         ignored_file_paths=glob_list(section.get('ignore', "")),
         limit_file_paths=glob_list(section.get('limit_files', "")))
+
+    # This stores all matched files irrespective of whether coala is run
+    # only on changed files or not. Global bears require all the files
+    complete_filename_list = filename_list
+    if section.get('caching', False):
+        filename_list = get_changed_files(filename_list, cache)
+
     file_dict = get_file_dict(filename_list, log_printer)
+    complete_file_dict = get_file_dict(complete_filename_list, log_printer)
 
     manager = multiprocessing.Manager()
     global_bear_queue = multiprocessing.Queue()
@@ -366,7 +379,7 @@ def instantiate_processes(section,
         section,
         local_bear_list,
         global_bear_list,
-        file_dict,
+        complete_file_dict,
         message_queue)
 
     fill_queue(filename_queue, file_dict.keys())
@@ -434,6 +447,22 @@ def yield_ignore_ranges(file_dict):
                                            len(file[-1])))
 
 
+def get_file_list(results):
+    """
+    Get the list of files that are affected in the given results.
+
+    :param results: A list of results from which the list of files is to be
+                    extracted.
+    :return:        A list of file paths containing the mentioned list of
+                    files.
+    """
+    files = []
+    for result in results:
+        for code in result.affected_code:
+            files.append(code.file)
+    return files
+
+
 def process_queues(processes,
                    control_queue,
                    local_result_dict,
@@ -441,6 +470,7 @@ def process_queues(processes,
                    file_dict,
                    print_results,
                    section,
+                   cache,
                    log_printer):
     """
     Iterate the control queue and send the results recieved to the print_result
@@ -463,6 +493,8 @@ def process_queues(processes,
                                filename as keys.
     :param print_results:      Prints all given results appropriate to the
                                output medium.
+    :param cache:              An instance of ``misc.Caching.FileCache`` to use
+                               as a file cache buffer.
     :return:                   Return True if all bears execute succesfully and
                                Results were delivered to the user. Else False.
     """
@@ -474,6 +506,7 @@ def process_queues(processes,
     local_processes = len(processes)
     global_processes = len(processes)
     global_result_buffer = []
+    result_files = set()
     ignore_ranges = list(yield_ignore_ranges(file_dict))
 
     # One process is the logger thread
@@ -487,6 +520,7 @@ def process_queues(processes,
                 global_processes -= 1
             elif control_elem == CONTROL_ELEMENT.LOCAL:
                 assert local_processes != 0
+                result_files.update(get_file_list(local_result_dict[index]))
                 retval, res = print_result(local_result_dict[index],
                                            file_dict,
                                            retval,
@@ -507,6 +541,7 @@ def process_queues(processes,
 
     # Flush global result buffer
     for elem in global_result_buffer:
+        result_files.update(get_file_list(global_result_dict[elem]))
         retval, res = print_result(global_result_dict[elem],
                                    file_dict,
                                    retval,
@@ -523,6 +558,7 @@ def process_queues(processes,
             control_elem, index = control_queue.get(timeout=0.1)
 
             if control_elem == CONTROL_ELEMENT.GLOBAL:
+                result_files.update(get_file_list(global_result_dict[index]))
                 retval, res = print_result(global_result_dict[index],
                                            file_dict,
                                            retval,
@@ -541,6 +577,8 @@ def process_queues(processes,
                 # nondeterministically covered.
                 break
 
+    if cache:
+        cache.add_to_changed_files(result_files)
     return retval
 
 
@@ -575,6 +613,7 @@ def execute_section(section,
                     global_bear_list,
                     local_bear_list,
                     print_results,
+                    cache,
                     log_printer):
     """
     Executes the section with the given bears.
@@ -593,6 +632,8 @@ def execute_section(section,
     :param local_bear_list:  List of local bears belonging to the section.
     :param print_results:    Prints all given results appropriate to the
                              output medium.
+    :param cache:            An instance of ``misc.Caching.FileCache`` to use as
+                             a file cache buffer.
     :param log_printer:      The log_printer to warn to.
     :return:                 Tuple containing a bool (True if results were
                              yielded, False otherwise), a Manager.dict
@@ -617,6 +658,7 @@ def execute_section(section,
                                                 local_bear_list,
                                                 global_bear_list,
                                                 running_processes,
+                                                cache,
                                                 log_printer)
 
     logger_thread = LogPrinterThread(arg_dict["message_queue"],
@@ -635,6 +677,7 @@ def execute_section(section,
                                arg_dict["file_dict"],
                                print_results,
                                section,
+                               cache,
                                log_printer),
                 arg_dict["local_result_dict"],
                 arg_dict["global_result_dict"],

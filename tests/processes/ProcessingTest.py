@@ -94,6 +94,7 @@ class ProcessingTest(unittest.TestCase):
                                   self.global_bears["default"],
                                   self.local_bears["default"],
                                   lambda *args: self.result_queue.put(args[2]),
+                                  None,
                                   self.log_printer)
         self.assertTrue(results[0])
 
@@ -130,6 +131,7 @@ class ProcessingTest(unittest.TestCase):
                                   [],
                                   [],
                                   lambda *args: self.result_queue.put(args[2]),
+                                  None,
                                   self.log_printer)
         # No results
         self.assertFalse(results[0])
@@ -200,6 +202,7 @@ class ProcessingTest(unittest.TestCase):
                    "seventh"]},
             lambda *args: self.queue.put(args[2]),
             section,
+            None,
             self.log_printer)
 
         self.assertEqual(self.queue.get(timeout=0), ([first_local,
@@ -221,6 +224,7 @@ class ProcessingTest(unittest.TestCase):
             ctrlq, {}, {}, {},
             lambda *args: self.queue.put(args[2]),
             Section(""),
+            None,
             self.log_printer)
         with self.assertRaises(queue.Empty):
             self.queue.get(timeout=0)
@@ -234,6 +238,7 @@ class ProcessingTest(unittest.TestCase):
             ctrlq, {}, {}, {},
             lambda *args: self.queue.put(args[2]),
             Section(""),
+            None,
             self.log_printer)
         with self.assertRaises(queue.Empty):
             self.queue.get(timeout=0)
